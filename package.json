@@ -1,0 +1,30 @@
+{
+  "name": "release-readiness-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pretest": "node -e \"console.log('Node version:', process.version)\"",
+    "test:e2e": "playwright test --project=chromium",
+    "test:api": "node scripts/api_smoke.js",
+    "fingerprint": "node scripts/fingerprint.js",
+    "gate:score:read": "node scripts/gate_score.js --readOnly",
+    "gate:score:enforce": "node scripts/gate_score.js",
+    "ci:all:readonly": "npm run test:e2e || true && npm run test:api || true && npm run fingerprint && npm run gate:score:read",
+    "ci:all:enforce": "npm run test:e2e && npm run test:api && npm run fingerprint && npm run gate:score:enforce"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "chalk": "^5.3.0",
+    "xml2js": "^0.6.2"
+  },
+  "dependencies": {
+    "newman": "6.1.2",
+    "postman-runtime": "7.39.0",
+    "postman-collection": "4.3.0"
+  },
+  "overrides": {
+    "postman-runtime": "7.39.0",
+    "postman-collection": "4.3.0"
+  }
+}

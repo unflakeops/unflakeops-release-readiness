@@ -1,0 +1,49 @@
+name: CI (Release Readiness Demo)
+on:
+  push: { branches: [ main ] }
+  pull_request: {}
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env: { FLAKY_SIM: '1', QUARANTINE: '0' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install
+        run: |
+          npm ci || npm i
+          npx playwright install --with-deps
+      - name: Run E2E
+        run: npm run test:e2e
+        continue-on-error: true
+      - name: Run API smoke
+        run: npm run test:api
+        continue-on-error: true
+      - name: Fingerprint
+        run: npm run fingerprint
+      - name: Gate (read-only)
+        run: npm run gate:score:read
+      - uses: actions/upload-artifact@v4
+        with: { name: ci-artifacts, path: artifacts }
+      - name: Post Summary
+        run: |
+          echo "### Release Readiness Gate (Read-Only)" >> $GITHUB_STEP_SUMMARY
+          echo "\n\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat artifacts/gate-score.json >> $GITHUB_STEP_SUMMARY
+          echo "\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+  enforce-gates:
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    env: { FLAKY_SIM: '1', QUARANTINE: '1' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install
+        run: |
+          npm ci || npm i
+          npx playwright install --with-deps
+      - name: Enforce gates
+        run: npm run ci:all:enforce

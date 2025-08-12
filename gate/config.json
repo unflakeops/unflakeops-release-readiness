@@ -1,0 +1,6 @@
+{
+  "passRateThreshold": 0.9,
+  "maxQuarantineDebt": 5,
+  "maxMedianDurationMs": 5000,
+  "mode": "readOnly"
+}

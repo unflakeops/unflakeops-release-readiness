@@ -1,0 +1,34 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.cache/
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Playwright & test outputs
+playwright-report/
+test-results/
+artifacts/
+
+# Env & OS clutter
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Framework odds & ends (harmless if unused)
+.next/
+.vercel/
+.turbo/
+.pnp
+.pnp.js

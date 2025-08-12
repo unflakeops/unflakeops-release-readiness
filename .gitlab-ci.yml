@@ -1,0 +1,24 @@
+stages: [test, fingerprint, gate]
+variables: { NODE_ENV: "ci", FLAKY_SIM: "1", QUARANTINE: "0" }
+cache: { key: ${CI_COMMIT_REF_SLUG}, paths: [node_modules/] }
+test:
+  image: mcr.microsoft.com/playwright:v1.45.0-jammy
+  stage: test
+  script:
+    - npm ci || npm i
+    - npx playwright install --with-deps
+    - npm run test:e2e || true
+    - npm run test:api || true
+  artifacts: { when: always, paths: [artifacts/], expire_in: 1 week }
+fingerprint:
+  image: node:20
+  stage: fingerprint
+  dependencies: [test]
+  script: [ "npm ci || npm i", "npm run fingerprint" ]
+  artifacts: { paths: [artifacts/], expire_in: 1 week }
+gate_read_only:
+  image: node:20
+  stage: gate
+  dependencies: [fingerprint]
+  script: [ "npm ci || npm i", "npm run gate:score:read" ]
+  when: on_success
