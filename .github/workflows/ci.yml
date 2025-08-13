@@ -1,49 +1,104 @@
 name: CI (Release Readiness Demo)
+
 on:
-  push: { branches: [ main ] }
+  push:
+    branches: [main]
   pull_request: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    env: { FLAKY_SIM: '1', QUARANTINE: '0' }
+    env:
+      FLAKY_SIM: "1" # show noisy PRs (demo)
+      QUARANTINE: "0" # don't skip the flaky test in PRs
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version: "20"
+          cache: "npm"
+
       - name: Install
         run: |
-          npm ci || npm i
+          npm ci
           npx playwright install --with-deps
-      - name: Run E2E
+
+      - name: Run E2E (read-only)
         run: npm run test:e2e
         continue-on-error: true
-      - name: Run API smoke
+
+      - name: Run API smoke (read-only)
         run: npm run test:api
         continue-on-error: true
-      - name: Fingerprint
+
+      - name: Fingerprint failures
         run: npm run fingerprint
-      - name: Gate (read-only)
+
+      - name: Gate (READ-ONLY)
         run: npm run gate:score:read
+
+      - name: Top failure clusters
+        run: npm run fingerprints:pretty -- 10
+        continue-on-error: true
+
       - uses: actions/upload-artifact@v4
-        with: { name: ci-artifacts, path: artifacts }
+        with:
+          name: ci-artifacts
+          path: artifacts
+          retention-days: 30
+
       - name: Post Summary
         run: |
-          echo "### Release Readiness Gate (Read-Only)" >> $GITHUB_STEP_SUMMARY
-          echo "\n\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          cat artifacts/gate-score.json >> $GITHUB_STEP_SUMMARY
-          echo "\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Release Readiness Gate (Read-Only)";
+            echo;
+            echo '```json';
+            cat artifacts/gate-score.json;
+            echo '```';
+          } >> $GITHUB_STEP_SUMMARY
+
   enforce-gates:
     if: github.ref == 'refs/heads/main'
     needs: build-and-test
     runs-on: ubuntu-latest
-    env: { FLAKY_SIM: '1', QUARANTINE: '1' }
+    env:
+      FLAKY_SIM: "0" # main should be clean; no simulated flake
+      QUARANTINE: "1" # allow skipping known-flaky tests from quarantine.json
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version: "20"
+          cache: "npm"
+
       - name: Install
         run: |
-          npm ci || npm i
+          npm ci
           npx playwright install --with-deps
-      - name: Enforce gates
+
+      - name: Enforce gates (will fail build if below thresholds)
         run: npm run ci:all:enforce
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-artifacts-main
+          path: artifacts
+          retention-days: 30
+
+      - name: Post Summary (enforce)
+        if: always()
+        run: |
+          {
+            echo "### Release Readiness Gate (Enforce)";
+            echo;
+            echo '```json';
+            cat artifacts/gate-score.json || echo '{"error":"no gate-score.json"}';
+            echo '```';
+          } >> $GITHUB_STEP_SUMMARY
