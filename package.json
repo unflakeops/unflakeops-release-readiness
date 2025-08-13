@@ -11,7 +11,8 @@
     "gate:score:read": "node scripts/gate_score.js --readOnly",
     "gate:score:enforce": "node scripts/gate_score.js",
     "ci:all:readonly": "npm run test:e2e || true && npm run test:api || true && npm run fingerprint && npm run gate:score:read",
-    "ci:all:enforce": "npm run test:e2e && npm run test:api && npm run fingerprint && npm run gate:score:enforce"
+    "ci:all:enforce": "npm run test:e2e && npm run test:api && npm run fingerprint && npm run gate:score:enforce",
+    "fingerprints:pretty": "node scripts/fingerprints_pretty.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",
@@ -20,8 +21,8 @@
   },
   "dependencies": {
     "newman": "6.1.2",
-    "postman-runtime": "7.39.0",
-    "postman-collection": "4.3.0"
+    "postman-collection": "4.3.0",
+    "postman-runtime": "7.39.0"
   },
   "overrides": {
     "postman-runtime": "7.39.0",
